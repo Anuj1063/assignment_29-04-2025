@@ -1,6 +1,6 @@
 const userModel = require("../models/user.model");
- const { generateFromEmail } = require("unique-username-generator");
- const  transporter  = require("../config/email.config")
+
+const transporter = require("../config/email.config");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -9,15 +9,17 @@ class AuthController {
   async signupUser(req, res) {
     try {
       const { firstName, lastName, email, age } = req.body;
-      let randomPassowrd= Math.floor( Math.random()*999999)
-      let userName=generateFromEmail(
-        email,
-        4
-      );
- 
+      let randomPassowrd = Math.random().toString(36).slice(-8);
+      
+      
+      let userName = generateFromEmail(email, 4);
+    
 
-      const hasedPassword = await bcrypt.hashSync(randomPassowrd.toString(), 10);
-      console.log(hasedPassword,"2222222222")
+      const hasedPassword =  bcrypt.hashSync(
+        randomPassowrd,
+        10
+      );
+    
 
       if (!firstName || !lastName || !email || !age) {
         return res.status(400).json({
@@ -27,15 +29,14 @@ class AuthController {
       }
 
       let isEmailExist = await userModel.findOne({ email });
+    
       if (isEmailExist) {
         return res.status(400).json({
           success: false,
           message: "Email Already Exists",
         });
       }
-     
-      
-      
+    
 
       let user = await userModel.create({
         firstName,
@@ -43,18 +44,18 @@ class AuthController {
         email,
         age,
         userName,
-        password:hasedPassword
+        password: hasedPassword,
       });
 
-      if(user){
-      const mailOptions = {
-        to: email,
-        subject: "user credentials",
-        html: `<p>Hello ${user.firstName},</p>
+      if (user) {
+        const mailOptions = {
+          to: email,
+          subject: "user credentials",
+          html: `<p>Hello ${user.firstName},</p>
                 <h1>User Name</h1>
-                <p href="" style="display: inline-block; font-size:10px; border-radius: 5px;">${user.userName}</p>
+                <p href="" style="display: inline-block; font-size:20px; border-radius: 5px;">${user.userName}</p>
                 <h1>password</h1>
-                <p href="" style="display: inline-block; font-size:10px; border-radius: 5px;">${randomPassowrd}</p>
+                <p href="" style="display: inline-block; font-size:20px; border-radius: 5px;">${randomPassowrd}</p>
                 
                 <p>This link will expire in 1 hour.</p>
                 
@@ -65,9 +66,9 @@ class AuthController {
                 <p><small>© 2025 Team Papai. All rights reserved.</small></p>
                 <p><small>Powered by Papai</small></p>
                 <p><small>Version 1.0</small></p>`,
-      };
-      await transporter.sendMail(mailOptions);
-    }
+        };
+        await transporter.sendMail(mailOptions);
+      }
 
       if (user) {
         return res.status(200).json({
@@ -80,7 +81,7 @@ class AuthController {
             email,
             age,
             userName,
-            message:"login credentaials send to your email"
+            message: "login credentaials send to your email",
           },
         });
       }
@@ -95,21 +96,37 @@ class AuthController {
 
   async loginUser(req, res) {
     try {
-      const { userName, password } = req.body;
-      if (!userName || !password) {
+      const { userNameOrEmail, password } = req.body;
+ 
+      if (!userNameOrEmail || !password) {
         return res.status(400).json({
           status: false,
-          message: "All Feild Required",
+          message: "Email or Username and password are required",
         });
       }
-      let user = await userModel.findOne({ userName, isDeleted: false });
+  
+      // Search user by email or username
+      const users = await userModel.aggregate([
+        {
+          $match: {
+            isDeleted: false,
+            $or: [
+              { email: userNameOrEmail },
+              { userName: userNameOrEmail }
+            ]
+          }
+        }
+      ]);
+  
+      const user = users[0];
+    
       if (!user) {
         return res.status(401).json({
           success: false,
           message: "Invalid credentials",
         });
       }
-     
+
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(401).json({
