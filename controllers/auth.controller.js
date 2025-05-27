@@ -12,7 +12,7 @@ class AuthController {
       let randomPassowrd = Math.random().toString(36).slice(-8);
       
       
-      let userName = generateFromEmail(email, 4);
+      let userName =  Math.random().toString(36).slice(-8);
     
 
       const hasedPassword =  bcrypt.hashSync(

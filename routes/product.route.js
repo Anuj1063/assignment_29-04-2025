@@ -6,7 +6,8 @@
 
 
     router.post("/create",authCheck.authenticateAPI,productController.createProduct)
-    router.get("/list",authCheck.authenticateAPI,productController.productList)
+    router.get("/list",authCheck.authenticateAPI,productController.productList);
+    router.get('/review/:id',productController.productReview)
  
 
     module.exports=router

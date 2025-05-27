@@ -14,6 +14,7 @@ app.use(express.json())
 app.use('/user',require('./routes/auth.route'))
 
 app.use('/product',require('./routes/product.route'))
+app.use('/review',require('./routes/review.route'))
 
 
 
